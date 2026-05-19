@@ -1,4 +1,4 @@
-package com.ecommerce.gateway.config;  // ← энийг засна
+package com.ecommerce.gateway.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
