@@ -54,9 +54,9 @@ public class GatewayController {
     @RequestMapping("/auth/**")
     public ResponseEntity<String> proxyAuth(HttpServletRequest request,
             @RequestBody(required = false) String body) {
-        return proxyNoCache(request, body, soapAuthUrl, "/api/auth", "/ws");
+        return proxyNoCache(request, body, soapAuthUrl, "/api/auth", "/ws/auth");
+        //                                                              ^^^^^^^^^^
     }
-
     private ResponseEntity<String> proxy(HttpServletRequest request, String body,
             String backendBaseUrl, String gatewayPrefix, String backendPrefix) {
 
@@ -131,7 +131,15 @@ public class GatewayController {
 
     private HttpHeaders copyHeaders(HttpServletRequest request) {
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
+        
+        // Content-Type-ийг request-аас хадгална (SOAP = text/xml, REST = application/json)
+        String contentType = request.getContentType();
+        if (contentType != null && contentType.contains("text/xml")) {
+            headers.setContentType(MediaType.TEXT_XML);
+        } else {
+            headers.setContentType(MediaType.APPLICATION_JSON);
+        }
+        
         List<String> forwardHeaders = List.of("Authorization", "X-User-Id", "X-Username", "X-User-Role");
         for (String header : forwardHeaders) {
             String value = request.getHeader(header);
