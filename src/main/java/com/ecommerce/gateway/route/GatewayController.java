@@ -46,9 +46,35 @@ public class GatewayController {
     }
 
     @RequestMapping("/files/**")
-    public ResponseEntity<String> proxyFiles(HttpServletRequest request,
+    public ResponseEntity<?> proxyFiles(HttpServletRequest request,
             @RequestBody(required = false) String body) {
+        
+        String contentType = request.getContentType();
+        
+        // Multipart (file upload) — тусад нь дамжуулна
+        if (contentType != null && contentType.startsWith("multipart/")) {
+            try {
+                String path = request.getRequestURI().replace("/api/files", "/files");
+                String fullUrl = fileManagerUrl + path;
+                
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.valueOf(contentType));
+                if (getToken(request) != null) headers.set("Authorization", getToken(request));
+                
+                byte[] bodyBytes = request.getInputStream().readAllBytes();
+                HttpEntity<byte[]> entity = new HttpEntity<>(bodyBytes, headers);
+                return restTemplate.exchange(fullUrl, HttpMethod.POST, entity, String.class);
+            } catch (Exception e) {
+                return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                        .body("{\"error\":\"File upload failed\"}");
+            }
+        }
+        
         return proxyNoCache(request, body, fileManagerUrl, "/api/files", "/files");
+    }
+
+    private String getToken(HttpServletRequest request) {
+        return request.getHeader("Authorization");
     }
 
     @RequestMapping("/auth/**")
